@@ -83,6 +83,8 @@ class MagneticRHR:
         force = tuple(charge*np.cross(velocity, B_field))
         self.correct = self.directions[force]
 
+        self.direction_widget.value=None
+        
         # clear the previous response to the student
         self.output_widget.clear_output()
         with self.output_widget:
