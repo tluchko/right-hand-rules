@@ -1,0 +1,8 @@
+{
+  "TagRemovePreprocessor":{
+      "remove_cell_tags" : ["notebook_only"]
+  },
+  "VoilaConfiguration": {
+
+  }
+}
