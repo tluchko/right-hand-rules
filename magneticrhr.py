@@ -39,7 +39,7 @@ class MagneticRHR:
         self.direction_widget.observe(self._guess, 'value')
 
         # display of the magnetif field plot
-        self.display_widget = widgets.Output(layout = ipywidgets.Layout(width='50%'))
+        self.display_widget = widgets.Output(layout = ipywidgets.Layout(width='500px'))
         with self.display_widget:
             self.fig, self.ax = plt.subplots(constrained_layout=True, figsize=(5, 5))
             self.ax.set_aspect('equal')
