@@ -10,3 +10,4 @@ dependencies:
   - jupyter_contrib_nbextensions
   - numpy
   - ipympl
+  - voila
