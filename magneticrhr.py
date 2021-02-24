@@ -17,9 +17,19 @@ class MagneticRHR:
     fields and particle velocities are along the x-, y-, or z-axes.
 
     '''
-    def __init__(self):
+    def __init__(self, charge_type):
         '''Initialize the test.  It is automatically displayed.
+        Args:
+            charge_type: 
+                (str) 'particle' or 'wire'.  Charges for 
+                'particle' can be positive or negative.  'wire' is 
+                always in the direction of the current.    
         '''
+        self.charge_type = charge_type
+        
+        if charge_type not in ['particle', 'wire']:
+            raise ValueError('`charge_type` must be "particle" or "wire"')
+        
         self.directions = collections.OrderedDict(
             {( 0, 0, 0):'None',
              ( 1, 0, 0):'Right', 
@@ -38,7 +48,7 @@ class MagneticRHR:
         # callback for when a new value is selected.
         self.direction_widget.observe(self._guess, 'value')
 
-        # display of the magnetif field plot
+        # display of the magnetic field plot
         self.display_widget = widgets.Output(layout = ipywidgets.Layout(width='500px'))
         with self.display_widget:
             self.fig, self.ax = plt.subplots(constrained_layout=True, figsize=(5, 5))
@@ -78,7 +88,9 @@ class MagneticRHR:
         # it.
         B_field = np.array(random.choice(list(self.directions.keys())[1:]))
         velocity = np.array(random.choice(list(self.directions.keys())[1:]))
-        charge = random.choice([-1,1])
+        charge = 1
+        if self.charge_type == 'particle':
+            charge = random.choice([-1,1])
         # calculate the answer
         force = tuple(charge*np.cross(velocity, B_field))
         self.correct = self.directions[force]
@@ -116,10 +128,12 @@ class MagneticRHR:
                 (list of ints) velocity vector
         '''
         color='C0'
-        if charge >0:
-            particle_label = 'Positive particle'
-        else:
-            particle_label = 'Negative particle'
+        particle_label = 'Current'
+        if self.charge_type == 'particle':
+            if charge >0:
+                particle_label = 'Positive particle'
+            else:
+                particle_label = 'Negative particle'
 
 
         # into and out of the page require special treatment since we
