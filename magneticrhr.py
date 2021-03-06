@@ -39,6 +39,17 @@ class MagneticRHR(widgets.VBox):
              ( 0, 0, 1):'Out of Page',
              ( 0, 0, -1):'Into Page'})
 
+        # Dropdown menu to select what the student is looking for
+        self.unknown_choice = 'force'
+        self.unknown_choices = ['random', self.charge_type, "force", "magnetic field"]
+        self.unknown_widget = widgets.Dropdown(
+            options=self.unknown_choices,
+            value=None,
+            description='Find the direction of the ',
+            style = {'description_width': 'initial'},
+            disabled=False)
+        self.unknown_widget.observe(self._set_unknown, 'value')
+        
         # Dropdown menu to select the values from. Added a dummy answer as the starting point.
         self.direction_widget = widgets.Dropdown(
             options=['']+list(self.directions.values()),
@@ -69,8 +80,12 @@ class MagneticRHR(widgets.VBox):
         self.next_widget.on_click(self.next)
 
         # stack the widgets and display the first problem
-#         display(widgets.VBox([self.display_widget, self.direction_widget, self.output_widget, self.next_widget]))
-        super().__init__([self.display_widget, self.direction_widget, self.output_widget, self.next_widget])
+        super().__init__([
+            self.unknown_widget,
+            self.display_widget, 
+            self.direction_widget, 
+            self.output_widget, 
+            self.next_widget])
         self.display_problem()
         
     def next(self, button):
@@ -84,17 +99,28 @@ class MagneticRHR(widgets.VBox):
         Generates and displays the next problem
         '''
 
-        # generate a random B-field, particle velocity and charge from
-        # the fixed options.  The first direction is 'None' so ignore
-        # it.
-        B_field = np.array(random.choice(list(self.directions.keys())[1:]))
-        velocity = np.array(random.choice(list(self.directions.keys())[1:]))
         charge = 1
         if self.charge_type == 'particle':
             charge = random.choice([-1,1])
-        # calculate the answer
-        force = tuple(charge*np.cross(velocity, B_field))
-        self.correct = self.directions[force]
+            
+        # local copy of the unknown choice so it can be selected from random if necessary
+        if self.unknown_choice == 'random':
+            unknown_choice = random.choice(self.unknown_choices[1:])
+        else:
+            unknown_choice = self.unknown_choice
+            
+        # make sure that if the force is being displayed, it is not 'none'. 
+        # For no force, there are multiple correct answers in this case.
+        while True:
+            # generate a random B-field, particle velocity and charge from
+            # the fixed options.  The first direction is 'None' so ignore
+            # it.
+            B_field = np.array(random.choice(list(self.directions.keys())[1:]))
+            velocity = np.array(random.choice(list(self.directions.keys())[1:]))
+            # calculate the force
+            force = charge*np.cross(velocity, B_field)
+            if unknown_choice == 'force' or self.directions[tuple(force)] != 'None':
+                break
         
         self.direction_widget.value=None
         
@@ -110,9 +136,21 @@ class MagneticRHR(widgets.VBox):
         self.ax.axis('off')
         self.ax.set_xlim(-1, 1)
         self.ax.set_ylim(-1, 1)
-        self._draw_B_field(B_field)
-        self._draw_particle_current_force(charge, velocity, force=False)
-        self._draw_particle_current_force(charge, np.array(force), force=True)
+                
+        # set the correct answer for the unknown value and display the knowns.
+        if unknown_choice == 'force':
+            self.correct = self.directions[tuple(force)]
+            self._draw_B_field(B_field)
+            self._draw_particle_current_force(charge, velocity, force=False)
+        elif unknown_choice == 'magnetic field':
+            self.correct = self.directions[tuple(B_field)]
+            self._draw_particle_current_force(charge, velocity, force=False)
+            self._draw_particle_current_force(charge, force, force=True)
+        elif unknown_choice == self.charge_type:
+            self.correct = self.directions[tuple(velocity)]
+            self._draw_B_field(B_field)
+            self._draw_particle_current_force(charge, force, force=True)
+        
         self.ax.legend()
         # display the plot
         with self.display_widget:
@@ -187,8 +225,6 @@ class MagneticRHR(widgets.VBox):
                 np.zeros([nvectors]),
                 color=color, 
                 scale=0.5, scale_units='x', label=label)
-#             self.ax.text(0, 1 - 1/nvectors, label, 
-#                          c=color, ha='center', va='center')
         elif direction[1] != 0:
             self.ax.quiver(
                 np.linspace(-1, 1, nvectors), 
@@ -197,19 +233,13 @@ class MagneticRHR(widgets.VBox):
                 np.full([nvectors], direction[1]), 
                 color=color, 
                 scale=0.5, scale_units='y', label=label)
-#             self.ax.text(-1 + 1/nvectors, 0, label, 
-#                          c=color, ha='center', va='center',
-#                          rotation='vertical', rotation_mode='anchor')
         elif direction[2] < 0:
             X, Y = np.meshgrid(np.linspace(-1, 1, nvectors), np.linspace(-1, 1, nvectors))
             self.ax.scatter(X,Y, marker='x', s=200, facecolors = color,edgecolors=color, label=label)
-#             self.ax.text(0,1 - 1/nvectors, label, c=color, ha='center', va='center')
         elif direction[2] > 0:
             X, Y = np.meshgrid(np.linspace(-1, 1, nvectors), np.linspace(-1, 1, nvectors))
             self.ax.scatter(X, Y, marker=r'$\bigodot$', s=200, 
                             facecolors=color, edgecolors=color, label=label)
-#             self.ax.scatter(X, Y, marker='o', s=40, facecolors = color, edgecolors = color)
-#             self.ax.text(0, 1 - 1/nvectors, label, c=color, ha='center', va='top')
 
 
     def _guess(self, change):
@@ -222,3 +252,9 @@ class MagneticRHR(widgets.VBox):
                 print('Correct!')
             else:
                 print('Try again.')
+
+    def _set_unknown(self, unknown_choice):
+        '''Record the user's choice of what to look for and generate a new problem.
+        '''
+        self.unknown_choice = unknown_choice['new']
+        self.next(None)
