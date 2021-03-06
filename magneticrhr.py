@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 get_ipython().run_line_magic('matplotlib', 'widget')
 #%matplotlib widget
 
-class MagneticRHR:
-    '''A class for students to test their knowledge of the magnetic force
+class MagneticRHR(widgets.VBox):
+    '''An ipywidget for students to test their knowledge of the magnetic force
     right-hand-rule in Jupyter notebooks.  Calling the class will
     start the self-test, which will run until the notebook is quit.
 
@@ -18,7 +18,7 @@ class MagneticRHR:
 
     '''
     def __init__(self, charge_type):
-        '''Initialize the test.  It is automatically displayed.
+        '''Initialize the test.  It is automatically ready to be displayed.
         Args:
             charge_type: 
                 (str) 'particle' or 'wire'.  Charges for 
@@ -69,7 +69,8 @@ class MagneticRHR:
         self.next_widget.on_click(self.next)
 
         # stack the widgets and display the first problem
-        display(widgets.VBox([self.display_widget, self.direction_widget, self.output_widget, self.next_widget]))
+#         display(widgets.VBox([self.display_widget, self.direction_widget, self.output_widget, self.next_widget]))
+        super().__init__([self.display_widget, self.direction_widget, self.output_widget, self.next_widget])
         self.display_problem()
         
     def next(self, button):
