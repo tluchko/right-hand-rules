@@ -95,7 +95,7 @@ class MagneticRHR(widgets.VBox):
         # calculate the answer
         force = tuple(charge*np.cross(velocity, B_field))
         self.correct = self.directions[force]
-
+        
         self.direction_widget.value=None
         
         # clear the previous response to the student
@@ -111,55 +111,58 @@ class MagneticRHR(widgets.VBox):
         self.ax.set_xlim(-1, 1)
         self.ax.set_ylim(-1, 1)
         self._draw_B_field(B_field)
-        self._draw_particle(charge, velocity)
-
+        self._draw_particle_current_force(charge, velocity, force=False)
+        self._draw_particle_current_force(charge, np.array(force), force=True)
+        self.ax.legend()
         # display the plot
         with self.display_widget:
             # print(B_field, velocity, charge, force)
             display(self.ax.figure)
 
-    def _draw_particle(self, charge, velocity):
+    def _draw_particle_current_force(self, charge, vector, force):
         '''
-        Draws the particle velocity vector and label
+        Draws a vector for the particle/current velocity/force vector and label
         
         Args:
             charge:
                 (-1 or 1)
-            velocity:
-                (list of ints) velocity vector
+            force:
+                (list of ints) force vector
         '''
-        color='C0'
-        particle_label = 'Current'
+        if force:
+            color='C2'
+            label = 'Force on'
+            va='bottom'
+        else:
+            color='C0'
+            label = 'Direction of'
+            va='top'
+        
         if self.charge_type == 'particle':
             if charge >0:
-                particle_label = 'Positive particle'
+                label += ' Positive Particle'
             else:
-                particle_label = 'Negative particle'
-
+                label += ' Negative Particle'
+        else:
+            label += ' Current'
 
         # into and out of the page require special treatment since we
         # use special vector symbols in these cases
-        if np.sum(np.abs(velocity[:2])) > 0:
+        if np.sum(np.abs(vector[:2])) > 0:
             self.ax.quiver(
-                *list(-velocity[:2]/2), 
-                *list(velocity[:2]), 
+                *list(-vector[:2]/2), 
+                *list(vector[:2]), 
                 color=color, 
-                scale=1, scale_units='xy')
+                scale=1, scale_units='xy', label=label)
             rotation='horizontal'
-            if velocity[1]!=0:
+            if vector[1]!=0:
                 rotation='vertical'
-            self.ax.text(*list(velocity[:2][::-1]*0.15), particle_label, 
-                         c=color, ha='center', va='top',
-                        rotation=rotation, rotation_mode='anchor')
-        elif velocity[2] < 0:
-            self.ax.scatter([0],[0], marker='x', s=200,  edgecolors = color)
-            self.ax.text(0,0.1, particle_label, c=color, ha='center', va='top')
-        elif velocity[2] > 0:
-            self.ax.scatter([0],[0], marker='o', s=200, 
-                            facecolors='none', edgecolors=color)
-            self.ax.scatter([0],[0], marker='o', s=40,  edgecolors = color)
-            self.ax.text(0,.15, particle_label, c=color, ha='center', va='top')
-
+        elif vector[2] < 0:
+            self.ax.scatter([0],[0], marker='x', s=200,  facecolors=color, edgecolors = color, label=label)
+        elif vector[2] > 0:
+            self.ax.scatter([0],[0], marker=r'$\bigodot$', s=200, 
+                            facecolors=color, edgecolors=color, label=label)
+            
     def _draw_B_field(self, direction):
         '''
         Draws the B-field vector
@@ -183,9 +186,9 @@ class MagneticRHR(widgets.VBox):
                 np.full([nvectors], direction[0]), 
                 np.zeros([nvectors]),
                 color=color, 
-                scale=0.5, scale_units='x')
-            self.ax.text(0, 1 - 1/nvectors, label, 
-                         c=color, ha='center', va='center')
+                scale=0.5, scale_units='x', label=label)
+#             self.ax.text(0, 1 - 1/nvectors, label, 
+#                          c=color, ha='center', va='center')
         elif direction[1] != 0:
             self.ax.quiver(
                 np.linspace(-1, 1, nvectors), 
@@ -193,20 +196,20 @@ class MagneticRHR(widgets.VBox):
                 np.zeros([nvectors]),
                 np.full([nvectors], direction[1]), 
                 color=color, 
-                scale=0.5, scale_units='y')
-            self.ax.text(-1 + 1/nvectors, 0, label, 
-                         c=color, ha='center', va='center',
-                         rotation='vertical', rotation_mode='anchor')
+                scale=0.5, scale_units='y', label=label)
+#             self.ax.text(-1 + 1/nvectors, 0, label, 
+#                          c=color, ha='center', va='center',
+#                          rotation='vertical', rotation_mode='anchor')
         elif direction[2] < 0:
             X, Y = np.meshgrid(np.linspace(-1, 1, nvectors), np.linspace(-1, 1, nvectors))
-            self.ax.scatter(X,Y, marker='x', s=200, facecolors = color,edgecolors=color)
-            self.ax.text(0,1 - 1/nvectors, label, c=color, ha='center', va='center')
+            self.ax.scatter(X,Y, marker='x', s=200, facecolors = color,edgecolors=color, label=label)
+#             self.ax.text(0,1 - 1/nvectors, label, c=color, ha='center', va='center')
         elif direction[2] > 0:
             X, Y = np.meshgrid(np.linspace(-1, 1, nvectors), np.linspace(-1, 1, nvectors))
-            self.ax.scatter(X, Y, marker='o', s=200, 
-                            facecolors='none', edgecolors=color)
-            self.ax.scatter(X, Y, marker='o', s=40, facecolors = color, edgecolors = color)
-            self.ax.text(0, 1 - 1/nvectors, label, c=color, ha='center', va='top')
+            self.ax.scatter(X, Y, marker=r'$\bigodot$', s=200, 
+                            facecolors=color, edgecolors=color, label=label)
+#             self.ax.scatter(X, Y, marker='o', s=40, facecolors = color, edgecolors = color)
+#             self.ax.text(0, 1 - 1/nvectors, label, c=color, ha='center', va='top')
 
 
     def _guess(self, change):
