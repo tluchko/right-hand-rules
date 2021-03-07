@@ -21,14 +21,14 @@ class MagneticRHR(widgets.VBox):
         '''Initialize the test.  It is automatically ready to be displayed.
         Args:
             charge_type: 
-                (str) 'particle' or 'wire'.  Charges for 
-                'particle' can be positive or negative.  'wire' is 
+                (str) 'particle' or 'current'.  Charges for 
+                'particle' can be positive or negative.  'current' is 
                 always in the direction of the current.    
         '''
         self.charge_type = charge_type
         
-        if charge_type not in ['particle', 'wire']:
-            raise ValueError('`charge_type` must be "particle" or "wire"')
+        if charge_type not in ['particle', 'current']:
+            raise ValueError('`charge_type` must be "particle" or "current"')
         
         self.directions = collections.OrderedDict(
             {( 0, 0, 0):'None',
@@ -40,15 +40,19 @@ class MagneticRHR(widgets.VBox):
              ( 0, 0, -1):'Into Page'})
 
         # Dropdown menu to select what the student is looking for
-        self.unknown_choice = 'force'
+        self.unknown_choice = 'random'
         self.unknown_choices = ['random', self.charge_type, "force", "magnetic field"]
-        self.unknown_widget = widgets.Dropdown(
+        self.unknown_widget_dropdown = widgets.Dropdown(
             options=self.unknown_choices,
-            value=None,
-            description='Find the direction of the ',
+            value='random',
+            description='',
             style = {'description_width': 'initial'},
             disabled=False)
-        self.unknown_widget.observe(self._set_unknown, 'value')
+        self.unknown_widget = widgets.VBox([
+            widgets.HTML(
+                value='Use the magnetic force right-hand-rule to find the direction of the '),
+            self.unknown_widget_dropdown])
+        self.unknown_widget_dropdown.observe(self._set_unknown, 'value')
         
         # Dropdown menu to select the values from. Added a dummy answer as the starting point.
         self.direction_widget = widgets.Dropdown(
@@ -98,7 +102,6 @@ class MagneticRHR(widgets.VBox):
         '''
         Generates and displays the next problem
         '''
-
         charge = 1
         if self.charge_type == 'particle':
             charge = random.choice([-1,1])
