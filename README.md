@@ -9,7 +9,7 @@ so that students do not need to see or excute the underlying code.
 # Running as a Voilà App
 
 Try it:
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/tluchko/right-hand-rules/HEAD?urlpath=voila%2Frender%2Fright-hand-rules.ipynb)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/tluchko/right-hand-rules/HEAD?urlpath=voila%2Frender%2Findex.ipynb)
 
 To run the notebook using Voila on your local server, first [install
 Voilà](https://voila.readthedocs.io/en/stable/install.html).  Then the
