@@ -7,6 +7,7 @@ import collections
 import matplotlib.pyplot as plt
 get_ipython().run_line_magic('matplotlib', 'widget')
 #%matplotlib widget
+plt.ioff()
 
 class MagneticRHR(widgets.VBox):
     '''An ipywidget for students to test their knowledge of the magnetic force
