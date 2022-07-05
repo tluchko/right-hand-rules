@@ -1,7 +1,14 @@
 import ipywidgets as widgets
 from IPython.display import display
 import random
+import os.path
+import ipyevents
 
+class WidgetList(widgets.VBox):
+    def __init__(self, widgets):
+        super().__init__(widgets)
+
+        
 class MagneticFieldRHR(widgets.VBox):
     '''An ipywidget for students to test their knowledge of the magnetic field
     right-hand-rules in Jupyter notebooks.  Calling the class will
@@ -24,40 +31,54 @@ class MagneticFieldRHR(widgets.VBox):
         if current_type not in ['straight', 'loop']:
             raise ValueError('`current_type` must be "straight" or "loop"')
         
-        self.linear_directions = ['Right', 'Left', 'Up', 'Down',
-                                  'Out of Page', 'Into Page']
+        self.linear_directions = [ widgets.Image(
+            value = open(f'Bfield {direction}.png', 'rb').read(), 
+            format = 'png',
+            width = 300,
+            height = 300) 
+                                for direction in 
+                                  ['right', 'left', 'up', 'down',
+                                  'out', 'in']]
 
-        self.loop_directions = ['yz-y', 'yz+y', 'xz+x', 'xz-x',
-                                  'CCW', 'CW']
+        self.loop_directions = [ widgets.Image(
+            value = open(f'current {direction}.png', 'rb').read(), 
+            format = 'png',
+            width = 300,
+            height = 300) 
+                                for direction in 
+                                ['yz-y', 'yz+y', 'xz+x', 'xz-x', 'CCW', 'CW']]
 
         # Dropdown menu to select what the student is looking for
-        self.unknown_choice = 'random'
+        #self.unknown_choice = 'random'
         self.unknown_choices = ['random', "current", "magnetic field"]
         self.unknown_widget_dropdown = widgets.Dropdown(
             options=self.unknown_choices,
-            value='random',
+            value='magnetic field',
             description='',
             style = {'description_width': 'initial'},
             disabled=False)
         self.unknown_widget = widgets.VBox([
             widgets.HTML(
                 value='Use the magnetic field right-hand-rule to find the direction of the '),
-            self.unknown_widget_dropdown])
+            self.unknown_widget_dropdown,
+            widgets.HTML(
+                r'The <span style="color:#0071bc;font-size:2em;"><b>current is blue</b></span> and the <span style="color:#f7931e;font-size:2em;"><b>magnetic field is orange</b></span>')])
         self.unknown_widget_dropdown.observe(self._set_unknown, 'value')
         self.correct = None
         
         # Dropdown menu to select the values from. Added a dummy
         # answer as the starting point.
-        self.direction_widget = widgets.Dropdown(
-            options=[''],
-            value=None,
-            description='Direction:',
-            disabled=False)
-        # callback for when a new value is selected.
-        self.direction_widget.observe(self._guess, 'value')
+        self.direction_widget = widgets.VBox([widgets.Label('Direction')])
+        # widgets.Dropdown(
+        #     options=[''],
+        #     value=None,
+        #     description='Direction:',
+        #     disabled=False)
+        # # callback for when a new value is selected.
+        # self.direction_widget.observe(self._guess, 'value')
         
         # display of the magnetic field plot
-        self.display_widget = widgets.Label('TEST')
+        self.display_widget = widgets.VBox()#Label('TEST')
 
         # output widget to tell the student if they are right or wrong
         self.output_widget = widgets.Output()
@@ -95,10 +116,10 @@ class MagneticFieldRHR(widgets.VBox):
 
         # local copy of the unknown choice so it can be selected from
         # random if necessary
-        if self.unknown_choice == 'random':
+        if self.unknown_widget_dropdown.value == 'random':
             unknown_choice = random.choice(self.unknown_choices[1:])
         else:
-            unknown_choice = self.unknown_choice
+            unknown_choice = self.unknown_widget_dropdown.value
 
         # select the index of the problem to be presented
         problem_idx = random.choice(range(len(self.linear_directions)))
@@ -119,24 +140,36 @@ class MagneticFieldRHR(widgets.VBox):
                 problem = self.loop_directions[problem_idx]
                 choices = self.linear_directions
 
+        self.display_widget.children = (problem,)
+        
         # set the choices
-        self.direction_widget.options = [''] + choices
+        self.direction_widget.children = (self.direction_widget.children[0], *choices)
+       
+        for i, choice in enumerate(choices):
+            event = ipyevents.Event(source=choice, watched_events=['click'],)
+            # Note, we need to capture `choice` using `choice=choice`, otherwise it is set based on scope and the last iteration is used.
+            #https://stackoverflow.com/a/7546307
+            event.on_dom_event(lambda change, choice = choice: self._guess(change, widget = choice))
+    
+        # self.direction_widget.options = [''] + choices
         # display the problem
-        self.display_widget.value = problem
+        #self.display_widget.value = problem
         # set the correct answer
         self.correct = choices[problem_idx]
         
         
-    def _guess(self, change):
+    def _guess(self, change, widget):
         '''Update the student and let them know if they are right or not.
 
         '''
+
         self.output_widget.clear_output()
         with self.output_widget:
-            if change['new'] == self.correct:
+            if widget == self.correct:
+            # if change['new'] == self.correct:
                 print('Correct!')
-            elif change['new'] == '':
-                pass
+            # elif change['new'] == '':
+            #     pass
             else:
                 print('Try again.')
                 
@@ -145,6 +178,6 @@ class MagneticFieldRHR(widgets.VBox):
         problem with the appropriate options.
 
         '''
-        self.unknown_choice = unknown_choice['new']
+        self.unknown_widget_dropdown = unknown_choice['new']
         self.next(None)
 
