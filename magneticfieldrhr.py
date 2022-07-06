@@ -34,8 +34,8 @@ class MagneticFieldRHR(widgets.VBox):
         self.linear_directions = [ widgets.Image(
             value = open(f'Bfield {direction}.png', 'rb').read(), 
             format = 'png',
-            width = 300,
-            height = 300) 
+            width = 150,
+            height = 150) 
                                 for direction in 
                                   ['right', 'left', 'up', 'down',
                                   'out', 'in']]
@@ -43,8 +43,8 @@ class MagneticFieldRHR(widgets.VBox):
         self.loop_directions = [ widgets.Image(
             value = open(f'current {direction}.png', 'rb').read(), 
             format = 'png',
-            width = 300,
-            height = 300) 
+            width = 150,
+            height = 150) 
                                 for direction in 
                                 ['yz-y', 'yz+y', 'xz+x', 'xz-x', 'CCW', 'CW']]
 
@@ -53,7 +53,7 @@ class MagneticFieldRHR(widgets.VBox):
         self.unknown_choices = ['random', "current", "magnetic field"]
         self.unknown_widget_dropdown = widgets.Dropdown(
             options=self.unknown_choices,
-            value='magnetic field',
+            value='random',
             description='',
             style = {'description_width': 'initial'},
             disabled=False)
@@ -62,13 +62,15 @@ class MagneticFieldRHR(widgets.VBox):
                 value='Use the magnetic field right-hand-rule to find the direction of the '),
             self.unknown_widget_dropdown,
             widgets.HTML(
-                r'The <span style="color:#0071bc;font-size:2em;"><b>current is blue</b></span> and the <span style="color:#f7931e;font-size:2em;"><b>magnetic field is orange</b></span>')])
+                r'The <span style="color:#0071bc;"><b>current is blue</b></span> and the <span style="color:#f7931e;"><b>magnetic field is orange</b></span>')])
         self.unknown_widget_dropdown.observe(self._set_unknown, 'value')
         self.correct = None
+        # self.unknown_widget_dropdown.on_trait_change(self.next)
         
         # Dropdown menu to select the values from. Added a dummy
         # answer as the starting point.
-        self.direction_widget = widgets.VBox([widgets.Label('Direction')])
+        self.instruction_widget = widgets.HTML()
+        self.direction_widget = widgets.GridspecLayout(3,2)
         # widgets.Dropdown(
         #     options=[''],
         #     value=None,
@@ -98,9 +100,11 @@ class MagneticFieldRHR(widgets.VBox):
         super().__init__([
             self.unknown_widget,
             self.display_widget, 
+            self.instruction_widget,
             self.direction_widget, 
             self.output_widget, 
             self.next_widget])
+        self._direction_events = []
         self.display_problem()
         
     def next(self, button):
@@ -113,7 +117,6 @@ class MagneticFieldRHR(widgets.VBox):
         '''
         Generates and displays the next problem
         '''
-
         # local copy of the unknown choice so it can be selected from
         # random if necessary
         if self.unknown_widget_dropdown.value == 'random':
@@ -136,26 +139,39 @@ class MagneticFieldRHR(widgets.VBox):
             if unknown_choice == 'current':
                 problem = self.linear_directions[problem_idx]
                 choices = self.loop_directions
+                other = 'that creates the magentic field'
             elif unknown_choice == 'magnetic field':
                 problem = self.loop_directions[problem_idx]
                 choices = self.linear_directions
+                other = 'created by the current loop'
 
         self.display_widget.children = (problem,)
-        
+
+
         # set the choices
-        self.direction_widget.children = (self.direction_widget.children[0], *choices)
+        self.instruction_widget.value = f'From the options below, click on the <b>direction of the {unknown_choice} {other}</b> above.'
+        ichoice = 0
+        for irow in range(self.direction_widget.n_rows):
+            for icol in range(self.direction_widget.n_columns):
+                self.direction_widget[irow, icol] = choices[ichoice]
+                ichoice += 1  
        
+        for event in self._direction_events:
+            del event
+            
         for i, choice in enumerate(choices):
             event = ipyevents.Event(source=choice, watched_events=['click'],)
             # Note, we need to capture `choice` using `choice=choice`, otherwise it is set based on scope and the last iteration is used.
             #https://stackoverflow.com/a/7546307
             event.on_dom_event(lambda change, choice = choice: self._guess(change, widget = choice))
+            self._direction_events.append(event)
     
         # self.direction_widget.options = [''] + choices
         # display the problem
         #self.display_widget.value = problem
         # set the correct answer
         self.correct = choices[problem_idx]
+        self.output_widget.clear_output()
         
         
     def _guess(self, change, widget):
@@ -178,6 +194,6 @@ class MagneticFieldRHR(widgets.VBox):
         problem with the appropriate options.
 
         '''
-        self.unknown_widget_dropdown = unknown_choice['new']
+        self.unknown_widget_dropdown.value = unknown_choice['new']
         self.next(None)
 
