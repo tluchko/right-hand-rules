@@ -27,6 +27,8 @@ class MagneticFieldRHR(widgets.VBox):
                 (str) 'straight' or 'loop'.
         '''
         self.current_type = current_type
+        self.width = 300
+        self.n_answer_col = 2
         
         if current_type not in ['straight', 'loop']:
             raise ValueError('`current_type` must be "straight" or "loop"')
@@ -34,8 +36,9 @@ class MagneticFieldRHR(widgets.VBox):
         self.linear_directions = [ widgets.Image(
             value = open(f'Bfield {direction}.png', 'rb').read(), 
             format = 'png',
-            width = 150,
-            height = 150) 
+            width = self.width/self.n_answer_col,
+            #height = 150
+        ) 
                                 for direction in 
                                   ['right', 'left', 'up', 'down',
                                   'out', 'in']]
@@ -43,8 +46,9 @@ class MagneticFieldRHR(widgets.VBox):
         self.loop_directions = [ widgets.Image(
             value = open(f'current {direction}.png', 'rb').read(), 
             format = 'png',
-            width = 150,
-            height = 150) 
+            width = self.width/self.n_answer_col,
+            #height = 150,
+        ) 
                                 for direction in 
                                 ['yz-y', 'yz+y', 'xz+x', 'xz-x', 'CCW', 'CW']]
 
@@ -69,8 +73,8 @@ class MagneticFieldRHR(widgets.VBox):
         
         # Dropdown menu to select the values from. Added a dummy
         # answer as the starting point.
-        self.instruction_widget = widgets.HTML()
-        self.direction_widget = widgets.GridspecLayout(3,2)
+        self.instruction_widget = widgets.HTML()#layout = widgets.Layout(width = f'{self.width}px'))
+        self.direction_widget = widgets.GridspecLayout(3,2, grid_gap = '0px', layout = widgets.Layout(border='none', width = f'{self.width*1.1}px'))
         # widgets.Dropdown(
         #     options=[''],
         #     value=None,
@@ -124,6 +128,12 @@ class MagneticFieldRHR(widgets.VBox):
         else:
             unknown_choice = self.unknown_widget_dropdown.value
 
+        # reset borders on all images
+        for direction in self.loop_directions:
+            direction.layout = widgets.Layout(border='none')
+        for direction in self.linear_directions:
+            direction.layout = widgets.Layout(border='none')
+
         # select the index of the problem to be presented
         problem_idx = random.choice(range(len(self.linear_directions)))
         
@@ -153,6 +163,7 @@ class MagneticFieldRHR(widgets.VBox):
         ichoice = 0
         for irow in range(self.direction_widget.n_rows):
             for icol in range(self.direction_widget.n_columns):
+                choices[ichoice].layout = widgets.Layout(border='none')
                 self.direction_widget[irow, icol] = choices[ichoice]
                 ichoice += 1  
        
@@ -184,10 +195,13 @@ class MagneticFieldRHR(widgets.VBox):
             if widget == self.correct:
             # if change['new'] == self.correct:
                 print('Correct!')
+                widget.layout = widgets.Layout(border='solid green')
             # elif change['new'] == '':
             #     pass
             else:
                 print('Try again.')
+                widget.layout = widgets.Layout(border='solid red')
+
                 
     def _set_unknown(self, unknown_choice):
         '''Record the user's choice of what to look for and generate a new
